@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin' ||
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true
+      );
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && 
+                      request.resource.data.uid == userId &&
+                      request.resource.data.balance == 0 &&
+                      request.resource.data.get('role', 'user') == 'user' &&
+                      request.resource.data.get('isAdmin', false) == false;
+      allow update: if isAdmin() || isOwner(userId);
+    }
+
+    match /usernames/{username} {
+      allow get: if true;
+      allow create: if isSignedIn();
+    }
+
+    match /fundRequests/{requestId} {
+      allow get: if isOwner(resource.data.uid) || isAdmin();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && 
+                      request.resource.data.uid == request.auth.uid &&
+                      request.resource.data.status == 'pending';
+      allow update: if isAdmin();
+    }
+
+    match /withdrawRequests/{requestId} {
+      allow get: if isOwner(resource.data.uid) || isAdmin();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && 
+                      request.resource.data.uid == request.auth.uid &&
+                      request.resource.data.status == 'pending';
+      allow update: if isAdmin();
+    }
+
+    match /bets/{betId} {
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    match /results/{resultId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isDeclared']) &&
+        request.resource.data.isDeclared == true &&
+        resource.data.isDeclared == false &&
+        request.time.toMillis() >= resource.data.resultTime
+      );
+    }
+
+    match /gameSessions/{sessionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /bonusCodes/{code} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+      allow update: if isSignedIn() && (isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount']));
+    }
+
+    match /userBonusUsage/{usageId} {
+      allow read: if isSignedIn() && (usageId.startsWith(request.auth.uid) || isAdmin());
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if resource.data.status == 'approved' || isOwner(resource.data.uid) || isAdmin();
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
+    }
+
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{annId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /winners/{winnerId} {
+      allow read: if true;
+      allow create: if true; // Allowed for clients to simulate settlement
+      allow update, delete: if isAdmin();
+    }
+
+    match /mail/{mailId} {
+      allow create: if true;
+    }
+    
+    match /password_resets/{docId} {
+      allow create, get, update, delete: if true;
+      allow list: if false; // Prevention against listing OTPs
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

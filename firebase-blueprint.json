@@ -1,0 +1,143 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and balances",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "username": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "pinCode": { "type": "string" },
+        "balance": { "type": "number" },
+        "bonusBalance": { "type": "number" },
+        "lockedBalance": { "type": "number" },
+        "isAdmin": { "type": "boolean" },
+        "isBlocked": { "type": "boolean" },
+        "depositAmount": { "type": "number" },
+        "requiredWager": { "type": "number" },
+        "wagerCompleted": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "username", "email", "balance", "bonusBalance", "lockedBalance", "depositAmount", "requiredWager", "wagerCompleted"]
+    },
+    "FundRequest": {
+      "title": "Fund Deposit Request",
+      "description": "Manual deposit requests from users",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "username": { "type": "string" },
+        "amount": { "type": "number" },
+        "referenceNote": { "type": "string" },
+        "screenshotUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "amount", "status", "createdAt"]
+    },
+    "WithdrawRequest": {
+      "title": "Withdrawal Request",
+      "description": "Manual withdrawal requests from users",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "username": { "type": "string" },
+        "amount": { "type": "number" },
+        "paymentDetails": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "amount", "paymentDetails", "status", "createdAt"]
+    },
+    "GameSession": {
+      "title": "Game Session",
+      "description": "A specific instance of a game cycle",
+      "type": "object",
+      "properties": {
+        "gameId": { "type": "string", "enum": ["number", "color"] },
+        "sessionId": { "type": "string" },
+        "sessionName": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["upcoming", "live", "closed", "declared"] },
+        "result": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["gameId", "sessionId", "startTime", "endTime", "status", "createdAt"]
+    },
+    "Bet": {
+      "title": "Game Bet",
+      "description": "A user's bet on a game session",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "username": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "gameId": { "type": "string" },
+        "amount": { "type": "number" },
+        "selection": { "type": "string" },
+        "payout": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "won", "lost"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "sessionId", "gameId", "amount", "selection", "status", "createdAt"]
+    },
+    "BonusCode": {
+      "title": "Bonus Code",
+      "description": "Promotion codes created by admin",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "amount": { "type": "number" },
+        "expiry": { "type": "string", "format": "date-time" },
+        "usageLimit": { "type": "number" },
+        "totalUsed": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "oneTimePerUser": { "type": "boolean" }
+      },
+      "required": ["code", "amount", "isActive"]
+    },
+    "Review": {
+      "title": "User Review",
+      "description": "Feedback and testimonials",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "username": { "type": "string" },
+        "feedback": { "type": "string" },
+        "screenshotUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "feedback", "status", "createdAt"]
+    },
+    "Winner": {
+      "title": "Recent Winner",
+      "description": "Records of recent game winners",
+      "type": "object",
+      "properties": {
+        "user": { "type": "string" },
+        "amount": { "type": "number" },
+        "gameId": { "type": "string", "enum": ["number", "color"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user", "amount", "gameId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users": { "schema": "User", "description": "User profiles and balances" },
+    "fundRequests": { "schema": "FundRequest", "description": "Deposit requests" },
+    "withdrawRequests": { "schema": "WithdrawRequest", "description": "Withdrawal requests" },
+    "gameSessions": { "schema": "GameSession", "description": "Active and past game sessions" },
+    "bets": { "schema": "Bet", "description": "User betting activity" },
+    "bonusCodes": { "schema": "BonusCode", "description": "Admin created bonus codes" },
+    "reviews": { "schema": "Review", "description": "User reviews and testimonials" },
+    "announcements": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "isActive": { "type": "boolean" } } }, "description": "Global announcements" },
+    "banners": { "schema": { "type": "object", "properties": { "imageUrl": { "type": "string" }, "isActive": { "type": "boolean" } } }, "description": "Home page banners" },
+    "winners": { "schema": "Winner", "description": "Recent winners history for global feed" }
+  }
+}
